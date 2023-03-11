@@ -41,10 +41,7 @@ to upload it to Github so that people could easily replicate the analysis.
 Unzip the `csv` and you should be able to run the tutorial!
 
 ```{r, message=FALSE}
-raw_data <- read_csv('data/imdb_dataset.csv', show_col_types = FALSE)
-
-data <- raw_data %>% 
-  rename('id'= '...1')
+data <- read_csv('data/imdb_dataset.csv', show_col_types = FALSE)
 ```
 
 Let's have a look at the first rows.

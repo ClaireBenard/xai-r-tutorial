@@ -31,20 +31,17 @@ library(DALEXtra)
 set.seed(1313)
 ```
 
-The data is available in the GitHub repository and was downloaded from
+The data is available in the data folder in the repository and was
+downloaded from
 [Kaggle](https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews).
 
-``` r
-raw_data <- read_csv('data/imdb_dataset.csv', show_col_types = FALSE)
-```
-
-    ## New names:
-    ## • `` -> `...1`
+The original dataset contains 50,000 rows, I took a sample of 12,000 and
+compressed it to upload it to Github so that people could easily
+replicate the analysis. Unzip the `csv` and you should be able to run
+the tutorial!
 
 ``` r
-data <- raw_data %>% 
-  rename('id'= '...1') %>% 
-  slice_sample(n = 12000) # taking a sample to make modelling quicker
+data <- read_csv('data/imdb_dataset.csv', show_col_types = FALSE)
 ```
 
 Let’s have a look at the first rows.
@@ -56,12 +53,12 @@ head(data %>% select(review, sentiment))
     ## # A tibble: 6 × 2
     ##   review                                                               sentiment
     ##   <chr>                                                                <chr>    
-    ## 1 "A refreshing black comedy starring some of Australia's finest. In … positive 
-    ## 2 "This movie was horrible.<br /><br />They didn't develop any of the… negative 
-    ## 3 "Mr Michael Jackson is an artistic phenomenon. His short movies, i.… positive 
-    ## 4 "Hey guy, this movies is everything about choices. All the times in… positive 
-    ## 5 "Giorgino can to some people look a bit long but it's one of rare r… positive 
-    ## 6 "We have high expectations with this one . . . because its Zombi 3 … positive
+    ## 1 "As a psychiatrist specialized in trauma, I find this film a beauti… positive 
+    ## 2 "The ending of this movie made absolutely NO SENSE. What a waste of… negative 
+    ## 3 "I'm not quite sure why, but this movie just doesn't play the way i… negative 
+    ## 4 "The title of this movie doesn't make a lot of sense, until you see… positive 
+    ## 5 "One of the those \"coming of age\" films that should have nostalgi… negative 
+    ## 6 "My mother took me to this movie at the drive-in when i was around … negative
 
 # Exploratory Data Analysis (EDA)
 
@@ -80,8 +77,8 @@ data %>% count(sentiment)
     ## # A tibble: 2 × 2
     ##   sentiment     n
     ##   <chr>     <int>
-    ## 1 negative   5963
-    ## 2 positive   6037
+    ## 1 negative   6017
+    ## 2 positive   5983
 
 The data is balanced with roughly the same number of positive and
 negative reviews.
@@ -137,7 +134,11 @@ boxplot_features(prop_punct, 'proportion of punctuation')
 ```
 
 ![](2023-02-03-cb-xai-r-tutorial_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-\# Train 2 models
+
+The box plots don’t show massive obvious differences between the
+anatomies of positive and negative reviews.
+
+# Train 2 models
 
 To illustrate XAI techniques, creating 2 models allows to see how they
 may agree but actually use quite different paths to get to the same
@@ -184,9 +185,9 @@ Let’s use the recipe package to create the steps to transform the review
 from text to a series of features. In this case, we use
 [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) (term frequency
 inverse document frequency): a measure of how frequent the word is in a
-particular document, relative to how frequent it is across document.
+particular document, relative to how frequent it is across documents.
 This helps lower the importance of terms that are very frequent in the
-corpus as they appear a lot across documents.
+corpus.
 
 ``` r
 prep_text_rec <-
@@ -239,6 +240,8 @@ lr <- logistic_reg(
 lr_fit <- lr %>% fit(sentiment_factor ~ ., data = train_processed)
 ```
 
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
 # Generate predictions
 
 ``` r
@@ -269,16 +272,14 @@ pred_rf %>%
     ## # A tibble: 1 × 1
     ##   accuracy
     ##      <dbl>
-    ## 1    0.808
+    ## 1    0.815
 
-The random forest gets it right 82% of the time. Let’s plot the
+The random forest gets it right around 80% of the time. Let’s plot the
 predictions distribution.
 
 ``` r
 ggplot(pred_rf, aes(.pred_1)) + geom_histogram()
 ```
-
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](2023-02-03-cb-xai-r-tutorial_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
@@ -287,12 +288,7 @@ ggplot(pred_rf, aes(.pred_1)) + geom_histogram()
 ``` r
 pred_lr <- predict(lr_fit, test_processed, type = 'prob') %>% 
   add_predict_meta_data()
-```
 
-    ## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
-    ## prediction from a rank-deficient fit may be misleading
-
-``` r
 pred_lr %>% 
   summarise(accuracy = mean(predict_num == sentiment_num))
 ```
@@ -300,7 +296,7 @@ pred_lr %>%
     ## # A tibble: 1 × 1
     ##   accuracy
     ##      <dbl>
-    ## 1    0.831
+    ## 1    0.843
 
 ``` r
 ggplot(pred_lr, aes(.pred_1)) + geom_histogram()
@@ -309,6 +305,7 @@ ggplot(pred_lr, aes(.pred_1)) + geom_histogram()
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](2023-02-03-cb-xai-r-tutorial_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
 The rnadom forest and the logistic regression have a very similar
 performance (around 82%) but the distribution of prediction varies
 drastically.
@@ -366,7 +363,7 @@ explainer_rf <- DALEXtra::explain_tidymodels(
     ##   -> predict function  :  predict_function 
     ##   -> predicted values  :  No value for predict function target column. (  default  )
     ##   -> model_info        :  package parsnip , ver. 0.2.1 , task classification (  default  ) 
-    ##   -> predicted values  :  numerical, min =  0.04364841 , mean =  0.5031964 , max =  0.9540897  
+    ##   -> predicted values  :  numerical, min =  0.03796587 , mean =  0.4971412 , max =  0.941431  
     ##   -> residual function :  residual_function 
     ##   -> residuals         :  numerical, min =  0 , mean =  0 , max =  0  
     ##   A new explainer has been created!
@@ -385,11 +382,11 @@ mp_rf
 ```
 
     ## Measures for:  classification
-    ## recall     : 0.8311258 
-    ## precision  : 0.7961935 
-    ## f1         : 0.8132847 
-    ## accuracy   : 0.8079967 
-    ## auc        : 0.8939728
+    ## recall     : 0.8287385 
+    ## precision  : 0.8065041 
+    ## f1         : 0.8174701 
+    ## accuracy   : 0.8154935 
+    ## auc        : 0.9055602
     ## 
     ## Residuals:
     ##   0%  10%  20%  30%  40%  50%  60%  70%  80%  90% 100% 
@@ -424,7 +421,7 @@ explainer_lr <- DALEXtra::explain_tidymodels(model = lr_fit,
     ## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
     ## prediction from a rank-deficient fit may be misleading
 
-    ##   -> predicted values  :  numerical, min =  1.279281e-09 , mean =  0.5063764 , max =  0.9999992  
+    ##   -> predicted values  :  numerical, min =  2.42165e-09 , mean =  0.5015149 , max =  0.9999991  
     ##   -> residual function :  residual_function 
     ##   -> residuals         :  numerical, min =  0 , mean =  0 , max =  0  
     ##   A new explainer has been created!
@@ -445,11 +442,11 @@ mp_lr
 ```
 
     ## Measures for:  classification
-    ## recall     : 0.8443709 
-    ## precision  : 0.8245756 
-    ## f1         : 0.8343558 
-    ## accuracy   : 0.8313203 
-    ## auc        : 0.9083187
+    ## recall     : 0.8579783 
+    ## precision  : 0.8329278 
+    ## f1         : 0.8452675 
+    ## accuracy   : 0.8433986 
+    ## auc        : 0.9165765
     ## 
     ## Residuals:
     ##   0%  10%  20%  30%  40%  50%  60%  70%  80%  90% 100% 
@@ -501,30 +498,18 @@ In addition, permutations are random, so the process is actually
 repeated a number of times to get the average results. I just did 6
 permutations to make it feasible here so the chunks below train 3000
 models. Realistically, global explainers reach their limit pretty fast
-on text data that warrant larger models.
+on text data that warrants larger models.
 
 ``` r
-Sys.time()
-```
-
-    ## [1] "2023-03-11 15:35:48 CET"
-
-``` r
+## TAKES ABOUT 9 MIN TO RUN ##
 fi_rf <- DALEX::model_parts(explainer_rf, B = 6)
 Sys.time()
 ```
 
-    ## [1] "2023-03-11 15:44:54 CET"
+    ## [1] "2023-03-11 20:02:32 CET"
 
 ``` r
-fi_rf_df <- data_frame(fi_rf)
-```
-
-    ## Warning: `data_frame()` was deprecated in tibble 1.1.0.
-    ## ℹ Please use `tibble()` instead.
-
-``` r
-top_features_rf <- fi_rf_df %>% 
+top_features_rf <- tibble(fi_rf) %>% 
   group_by(variable, label) %>% 
   summarise(av_importance = mean(dropout_loss)) %>% 
   ungroup() %>% 
@@ -536,31 +521,18 @@ top_features_rf <- fi_rf_df %>%
     ## `.groups` argument.
 
 ``` r
-Sys.time()
-```
-
-    ## [1] "2023-03-11 15:44:54 CET"
-
-``` r
+## TAKES ABOUT 3 MIN TO RUN ##
 fi_lr <- DALEX::model_parts(explainer_lr, B = 6)
-Sys.time()
 ```
 
-    ## [1] "2023-03-11 15:46:58 CET"
-
 ``` r
-fi_lr_df <- data_frame(fi_lr)
-
-top_features_lr <- fi_lr_df %>% 
+top_features_lr <- tibble(fi_lr) %>% 
   group_by(variable, label) %>% 
   summarise(av_importance = mean(dropout_loss)) %>% 
   ungroup() %>% 
   top_n(20, wt = av_importance) %>% 
   mutate(word = str_remove(variable, 'tfidf_clean_review_'))
 ```
-
-    ## `summarise()` has grouped output by 'variable'. You can override using the
-    ## `.groups` argument.
 
 ``` r
 top_features_lr %>% 
@@ -579,11 +551,8 @@ top_features_lr %>%
 ![](2023-02-03-cb-xai-r-tutorial_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 While they have very similar performance, the random forest and the
-logistic regression don’t follow the same path: ‘poor’, ‘love’ and
-‘stupid’ make it to the top 20 most important words for the random
-forest but don’t make the top 20 for the regression. Conversely,
-‘hilarious’ and ‘perfect’ matter to the regression but less to the
-forest.
+logistic regression don’t follow the same path: some words make it to
+both lists of top 20 features but the two lists don’t overlap.
 
 ## Accumulated Local Effect (ALE)
 
@@ -600,15 +569,7 @@ ale_rf <- model_profile(explainer_rf,
 ale_lr <- model_profile(explainer_lr,
                        variables = "tfidf_clean_review_poor",
                        type = "accumulated")
-```
 
-    ## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
-    ## prediction from a rank-deficient fit may be misleading
-
-    ## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
-    ## prediction from a rank-deficient fit may be misleading
-
-``` r
 plot(ale_rf, ale_lr)
 ```
 
@@ -642,7 +603,7 @@ Let’s take the first review of the test set.
 test_data[1,]$review
 ```
 
-    ## [1] "A refreshing black comedy starring some of Australia's finest. In the same way that Lock Stock and 2 Smoking Barrels captured the funny side of London gangsters, Two Hands rips through the Sydney underworld. It wouldn't be so funny if it wasn't so close to the bone.<br /><br />An Australian classic. If Australia could pull more rabbits like this out its hat it might actually have a film industry worth keeping an eye on."
+    ## [1] "The ending of this movie made absolutely NO SENSE. What a waste of 2 perfectly good hours. If you can explain it to me...PLEASE DO. I don't usually consider myself unable to \"get\" a movie, but this was a classic example for me, so either I'm slower than I think, or this was a REALLY bad movie."
 
 ## Explain the random forest prediction of a review
 
