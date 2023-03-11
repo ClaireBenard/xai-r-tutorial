@@ -34,14 +34,17 @@ library(DALEXtra)
 set.seed(1313)
 ```
 
-The data is available in the GitHub repository and was downloaded from [Kaggle](https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews).
+The data is available in the data folder in the repository and was downloaded from [Kaggle](https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews).
 
-```{r}
+The original dataset contains 50,000 rows, I took a sample of 12,000 and compressed it
+to upload it to Github so that people could easily replicate the analysis.
+Unzip the `csv` and you should be able to run the tutorial!
+
+```{r, message=FALSE}
 raw_data <- read_csv('data/imdb_dataset.csv', show_col_types = FALSE)
 
 data <- raw_data %>% 
-  rename('id'= '...1') %>% 
-  slice_sample(n = 12000) # taking a sample to make modelling quicker
+  rename('id'= '...1')
 ```
 
 Let's have a look at the first rows.
