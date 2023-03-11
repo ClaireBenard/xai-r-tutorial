@@ -1,0 +1,26 @@
+# Introduction
+
+This tutorial illustrates the use of explainable AI techniques (XAI) on text data. 
+The data used is open data from Kaggle, you can download the raw data 
+[here](https://ai.stanford.edu/~amaas/data/sentiment/)
+
+It contains 3 columns: `id`, `reviews` and `sentiment` and 50,000 rows but to make 
+things faster and simpler, I take a random sample of 12,000 reviews for this tutorial.
+
+
+# Requirements
+
+This tutorial uses the following R packages:
+
+* tidyverse
+* stringr
+* textrecipes
+* tidymodels
+* randomForest
+* DALEXtra
+
+# Running the code
+
+The notebook `2023-02-03-cb-xai-r-tutorial.Rmd` contains the code for the tutorial. 
+Place the imdb data, named `imdb_dataset.csv` containing the reviews and sentiments in the `data` folder.
+You should be able to run the code from there.
