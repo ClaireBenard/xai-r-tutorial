@@ -22,7 +22,7 @@ This tutorial uses the following R packages:
 # Running the code
 
 1. Unzip the imdb data, named `imdb_dataset.csv.zip` in the `data` folder
-2. Open the notebook `2023-02-03-cb-xai-r-tutorial.Rmd` that the code for the tutorial
+2. Open the notebook `2023-02-03-cb-xai-r-tutorial.Rmd` that contains the code for the tutorial
 3. Run the notebook :)
 
 The file `2023-02-03-cb-xai-r-tutorial.md` is the github document that you can open 
